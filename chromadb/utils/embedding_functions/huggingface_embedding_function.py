@@ -1,9 +1,10 @@
 import logging
-from typing import cast
+from typing import cast, Optional
 
 import httpx
 
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
+from chromadb.utils.client_utils import get_client_options
 
 logger = logging.getLogger(__name__)
 
@@ -15,17 +16,22 @@ class HuggingFaceEmbeddingFunction(EmbeddingFunction[Documents]):
     """
 
     def __init__(
-        self, api_key: str, model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
-    ):
+        self,
+        api_key: str,
+        model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        timeout: Optional[float] = None,
+    ) -> None:
         """
         Initialize the HuggingFaceEmbeddingFunction.
 
         Args:
             api_key (str): Your API key for the HuggingFace API.
             model_name (str, optional): The name of the model to use for text embeddings. Defaults to "sentence-transformers/all-MiniLM-L6-v2".
+            timeout (Optional[float]): The timeout for the HuggingFace http client. If fot specified the DEFAULT_TIMEOUT_CONFIG is set as the default timeout.
         """
         self._api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
-        self._session = httpx.Client()
+        client_opts = get_client_options(timeout=timeout)
+        self._session = httpx.Client(**client_opts)
         self._session.headers.update({"Authorization": f"Bearer {api_key}"})
 
     def __call__(self, input: Documents) -> Embeddings:
@@ -59,15 +65,17 @@ class HuggingFaceEmbeddingServer(EmbeddingFunction[Documents]):
     The embedding model is configured in the server.
     """
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, timeout: Optional[float] = None) -> None:
         """
         Initialize the HuggingFaceEmbeddingServer.
 
         Args:
             url (str): The URL of the HuggingFace Embedding Server.
+                        timeout (Optional[float]): The timeout for the HuggingFace http client. If fot specified the DEFAULT_TIMEOUT_CONFIG is set as the default timeout.
         """
         self._api_url = f"{url}"
-        self._session = httpx.Client()
+        client_options = get_client_options(timeout=timeout)
+        self._session = httpx.Client(**client_options)
 
     def __call__(self, input: Documents) -> Embeddings:
         """

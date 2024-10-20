@@ -1,9 +1,10 @@
 import logging
-from typing import List, cast, Union
+from typing import List, cast, Union, Optional
 
 import httpx
 
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
+from chromadb.utils.client_utils import get_client_options
 
 logger = logging.getLogger(__name__)
 
@@ -14,17 +15,24 @@ class JinaEmbeddingFunction(EmbeddingFunction[Documents]):
     It requires an API key and a model name. The default model name is "jina-embeddings-v2-base-en".
     """
 
-    def __init__(self, api_key: str, model_name: str = "jina-embeddings-v2-base-en"):
+    def __init__(
+        self,
+        api_key: str,
+        model_name: str = "jina-embeddings-v2-base-en",
+        timeout: Optional[float] = None,
+    ) -> None:
         """
         Initialize the JinaEmbeddingFunction.
 
         Args:
             api_key (str): Your API key for the Jina AI API.
             model_name (str, optional): The name of the model to use for text embeddings. Defaults to "jina-embeddings-v2-base-en".
+                        timeout (Optional[float]): The timeout for the Jina AI http client. If fot specified the DEFAULT_TIMEOUT_CONFIG is set as the default timeout.
         """
         self._model_name = model_name
         self._api_url = "https://api.jina.ai/v1/embeddings"
-        self._session = httpx.Client()
+        client_options = get_client_options(timeout=timeout)
+        self._session = httpx.Client(**client_options)
         self._session.headers.update(
             {"Authorization": f"Bearer {api_key}", "Accept-Encoding": "identity"}
         )

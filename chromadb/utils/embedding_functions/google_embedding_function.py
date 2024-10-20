@@ -1,8 +1,9 @@
 import logging
-
+from typing import Optional
 import httpx
 
 from chromadb.api.types import Documents, EmbeddingFunction, Embeddings
+from chromadb.utils.client_utils import get_client_options
 
 logger = logging.getLogger(__name__)
 
@@ -92,9 +93,11 @@ class GoogleVertexEmbeddingFunction(EmbeddingFunction[Documents]):
         model_name: str = "textembedding-gecko",
         project_id: str = "cloud-large-language-models",
         region: str = "us-central1",
-    ):
+        timeout: Optional[float] = None,
+    ) -> None:
         self._api_url = f"https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/publishers/goole/models/{model_name}:predict"
-        self._session = httpx.Client()
+        client_options = get_client_options(timeout=timeout)
+        self._session = httpx.Client(**client_options)
         self._session.headers.update({"Authorization": f"Bearer {api_key}"})
 
     def __call__(self, input: Documents) -> Embeddings:
